@@ -1,9 +1,9 @@
-# dogenpunk.zsh-theme
+# dogenpunk-with-batterystat.zsh-theme
 
 MODE_INDICATOR="%{$fg_bold[red]%}❮%{$reset_color%}%{$fg[red]%}❮❮%{$reset_color%}"
 local return_status="%{$fg[red]%}%(?..⏎)%{$reset_color%}"
 
-PROMPT='%{$fg[blue]%}%m%{$reset_color%}%{$fg_bold[white]%} $(battery 0)$(tput setaf 1)愛 ${reset_color%}%{$fg[cyan]%}%~:%{$reset_color%}$(git_time_since_commit)$(git_prompt_info)
+PROMPT='%{$fg[blue]%}%m%{$reset_color%}%{$fg_bold[white]%} $(bat 0)$(tput setaf 1)愛 ${reset_color%}%{$fg[cyan]%}%~:%{$reset_color%}$(git_time_since_commit)$(git_prompt_info)
 %{$fg[red]%}%!%{$reset_color%} $(prompt_char) '
 
 ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_bold[green]%}git%{$reset_color%}@%{$bg[white]%}%{$fg[black]%}"
@@ -76,4 +76,58 @@ function git_time_since_commit() {
             echo "($COLOR~|"
         fi
     fi
+}
+
+function bat(){
+getstats(){
+	batstat=()
+	IFS="; " read -r batstat <<< $(pmset -g batt | grep -Eo '[1]?[0-9]?[0-9]\%.*')
+	echo ${batstat[@]}
+}
+
+check_battery_status(){
+	batstat=($(getstats))
+	stat=$batstat[2]
+	if [[ $stat =~ "charge" ]]; then
+		echo -n "\U26A1"
+	elif [[ $stat =~ "discharging" ]]; then
+		echo -n "\U1F44C"
+	fi
+}
+
+color_persentage(){
+	batstat=($(getstats))
+	per=${batstat[1]:0:-2}
+	if (( $per >= 70 )); then
+		echo -n "$(tput setaf 2)$per $(tput setaf 0)"
+	elif (( $per < 70 )) && (( $per >= 35 )); then
+		echo -n "$(tput setaf 3)$per $(tput setaf 0)"
+	elif (( $pet < 35 )); then
+		echo -n "$(tput setaf 1)$per $(tput setaf 0)"
+	fi
+}
+
+rem_time(){
+	batstat=($(getstats))
+	rem=$batstat[3]   
+	if [[ $batstat[2] =~ "charged" ]] || [[ $rem =~ "no" ]]; then
+		echo -n ""
+	else
+		echo -n "$(tput setaf 3)$rem $(tput setaf 0)"
+	fi
+}
+
+if (( $1 == 1 )); then
+	check_battery_status
+elif (( $1 == 2 )); then
+	color_persentage
+elif (( $1 == 3 )); then
+	rem_time
+elif (( $1 == 0 )); then
+	check_battery_status
+	echo -n " "
+	color_persentage
+	echo -n ""
+	rem_time
+fi
 }
